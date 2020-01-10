@@ -6,7 +6,7 @@ import time
 import requests
 
 #0 - Setar cookie anti robo'
-cookie_anti_robo = 'valor_cookie'
+cookie_anti_robo = 'JSESSIONID=74A94D31ABC54A007C9EBA192A413AAC.easysearch01; _ga=GA1.3.453960748.1545014547; _gid=GA1.3.1109241380.1578597618; auth-trt2-es-hml=8a1314c7d3ee204cfb251e45118d4492'
 
 def parse_data(strData):
     return datetime.datetime.strptime(strData, '%d/%m/%Y')
@@ -38,13 +38,32 @@ def parse_retorno_chamada(str_retorno_chamada):
 
 def realizar_chamada_inicial(periodo):
     #2.2.1 - Realizar chamada conforme:  curl 'http://search.trtsp.jus.br/EasySearchFrontEnd/AcordaoServlet' -XPOST -H 'Content-Type: application/x-www-form-urlencoded; charset=UTF-8'  -H 'Cookie: auth-trt2-es-hml=dc9ac3518f7ecc9056a6b1c8da3f1c3b;' --data 'termoGeral=&juizRelator=&numeroProcesso=&orgaoJulgador=&dataPublicacaoDe=01%2F01%2F2019&dataPublicacaoAte=31%2F01%2F2019&tipo_pesquisa=aco_ee&order=DESC&field='
-    str_retorno_chamada = '{"totalDocs":132,"start":0,"currentPage":1,"totalPages":2,"listaAcordao":[{"numeroUnico":"0023300-18.2003.5.02.0062"},{"numeroUnico":"0046300-62.2008.5.02.0065"},{"numeroUnico":"1000015-09.2016.5.02.0034"}],"acordaoBO":{"sortField":"","sortOrder":"DESC","dataPublicacaoDe":"2019-03-01","dataPublicacaoAte":"2019-03-01","acordao":{}}}'
-    return parse_retorno_chamada(str_retorno_chamada)
+    data = {'termoGeral': '',
+            'juizRelator': '',
+            'numeroProcesso': '',
+            'orgaoJulgador': '',
+            'dataPublicacaoDe': periodo[0],
+            'dataPublicacaoAte': periodo[1],
+            'tipo_pesquisa': 'aco_ee',
+            'order': 'DESC',
+            'field': ''}
+    headers = {'Cookie': cookie_anti_robo}
+               
+    request = requests.post(url = 'http://search.trtsp.jus.br/EasySearchFrontEnd/AcordaoServlet', data = data, headers = headers)
+    return request.json();
+#    str_retorno_chamada = '{"totalDocs":132,"start":0,"currentPage":1,"totalPages":2,"listaAcordao":[{"numeroUnico":"0023300-18.2003.5.02.0062"},{"numeroUnico":"0046300-62.2008.5.02.0065"},{"numeroUnico":"1000015-09.2016.5.02.0034"}],"acordaoBO":{"sortField":"","sortOrder":"DESC","dataPublicacaoDe":"2019-03-01","dataPublicacaoAte":"2019-03-01","acordao":{}}}'
+#    return parse_retorno_chamada(str_retorno_chamada)
 
 def realizar_chamada_proxima_pagina():
-   # Realizar chamada conforme curl 'http://search.trtsp.jus.br/EasySearchFrontEnd/AcordaoServlet' -H 'Connection: keep-alive' -H 'Pragma: no-cache' -H 'Cache-Control: no-cache' -H 'Accept: */*' -H 'Origin: http://search.trtsp.jus.br' -H 'X-Requested-With: XMLHttpRequest' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.117 Safari/537.36' -H 'Content-Type: application/x-www-form-urlencoded; charset=UTF-8' -H 'Referer: http://search.trtsp.jus.br/EasySearchFrontEnd/AcordaosEletronicosEmentados.jsp' -H 'Accept-Encoding: gzip, deflate' -H 'Accept-Language: pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7' -H 'Cookie: JSESSIONID=456B7D7317C2C394B9C9C9E1AC8C06D4.easysearch01; _ga=GA1.3.453960748.1545014547; _gid=GA1.3.1109241380.1578597618; auth-trt2-es-hml=fe3d24a03fa685c073d82ea7872f8b05' --data 'pager=true&action=next&tipo_pesquisa=aco_ee' --compressed --insecure 
-    str_retorno_chamada = '{"totalDocs":132,"start":0,"currentPage":2,"totalPages":2,"listaAcordao":[{"numeroUnico":"0023300-18.2003.5.02.0062"},{"numeroUnico":"0046300-62.2008.5.02.0065"},{"numeroUnico":"1000015-09.2016.5.02.0034"}],"acordaoBO":{"sortField":"","sortOrder":"DESC","dataPublicacaoDe":"2019-03-01","dataPublicacaoAte":"2019-03-01","acordao":{}}}'
-    return parse_retorno_chamada(str_retorno_chamada)
+    data = {'pager': 'true',
+            'action': 'next',
+            'tipo_pesquisa': 'aco_ee' }
+    headers = {'Cookie': cookie_anti_robo}
+               
+    request = requests.post(url = 'http://search.trtsp.jus.br/EasySearchFrontEnd/AcordaoServlet', data = data, headers = headers)
+    return request.json();
+#    str_retorno_chamada = '{"totalDocs":132,"start":0,"currentPage":2,"totalPages":2,"listaAcordao":[{"numeroUnico":"0023300-18.2003.5.02.0062"},{"numeroUnico":"0046300-62.2008.5.02.0065"},{"numeroUnico":"1000015-09.2016.5.02.0034"}],"acordaoBO":{"sortField":"","sortOrder":"DESC","dataPublicacaoDe":"2019-03-01","dataPublicacaoAte":"2019-03-01","acordao":{}}}'
+#    return parse_retorno_chamada(str_retorno_chamada)
 
 def obter_nome_arquivo_acordaos(periodo):
     return formatar_nome_diretorio(periodo) + '/acordaos.json'
@@ -109,25 +128,30 @@ def pesquisar_acordaos(periodo):
     return obter_conteudo_acordaos(periodo)
    
 
-lista_periodos = [('01/01/2019', '31/01/2019'), \
+lista_periodos = [('01/03/2019', '01/03/2019'), \
                   ('01/02/2019', '28/02/2019'), \
                   ('01/03/2019', '31/03/2019'), \
                   ('01/04/2019', '30/04/2019'), \
                  ]
 
-for periodo in lista_periodos:
-    criar_diretorio_periodo(periodo)
-    #2.2 - Pesquisar acordaos do periodo
-    acordaos_periodo = pesquisar_acordaos(periodo)
-    print('acordaos buscados para periodo', acordaos_periodo)
-    #2.3 - Para cada acordao:
-    #2.3.1 - Buscar url no campo "acordaoLink"
-    #2.3.2 - Realizar curl para buscar conteudo do acordao conforme: curl 'http://search.trtsp.jus.br/easysearch/cachedownloader?collection=coleta011&docId=0de2d597dbd9460bc4cd4c4b6fa28faebfb53707&fieldName=ementa&extension=html#q=' -H 'Cookie: auth-trt2-es-hml=dc9ac3518f7ecc9056a6b1c8da3f1c3b;'
-    #2.3.3 - Buscar informacoes da ementa. Ex de retorno: <p style="padding-left: 200px; font-size: 12pt; float: none; margin-bottom: 6pt; line-height: 113%; font-family: 'Arial'; position: static; text-align: justify; text-indent: 0px;" data-estilo-editor="Ementa"><strong>MANUTEN&Ccedil;&Atilde;O DO PLANO DE SA&Uacute;DE. EX-EMPREGADO. APOSENTADO. ART. 31 DA LEI 9.656/1998. </strong>Ao aposentado que contribuir para plano de sa&uacute;de, em decorr&ecirc;ncia de v&iacute;nculo empregat&iacute;cio, pelo prazo m&iacute;nimo de dez anos, &eacute; assegurado o direito de manuten&ccedil;&atilde;o como benefici&aacute;rio, nas mesmas condi&ccedil;&otilde;es de cobertura assistencial de que gozava quando da vig&ecirc;ncia do contrato de trabalho, inclusive no que respeita aos valores praticados na ap&oacute;lice coletiva, desde que assuma o pagamento integral do seguro sa&uacute;de. Esta &eacute; a interpreta&ccedil;&atilde;o teleol&oacute;gica mais autorizada do art. 31 da Lei 9.656/1998. <strong>Recurso do reclamante provido neste aspecto.</strong></p>
-    #2.3.4 - Gravar acordao sem a ementa no diretorio do respectivo periodo com o nome numeroUnicoProcesso (sem pontos ou tracos) _acordao.txt
-    #2.3.5 - Gravar ementa no diretorio do respectivo periodo com o nome numeroUnicoProcesso_ementa.txt
-    #2.4 - Aguardar um periodo aleatorio entre 1 e 5 segundos
-    aguardar_antes_de_proxima_chamada()
+acordaos_chamada_inicial = realizar_chamada_inicial(lista_periodos[0])
+print(acordaos_chamada_inicial)
+acordaos_segunda_chamada = realizar_chamada_proxima_pagina()
+print(acordaos_segunda_chamada)
+
+#for periodo in lista_periodos:
+#    criar_diretorio_periodo(periodo)
+#    #2.2 - Pesquisar acordaos do periodo
+#    acordaos_periodo = pesquisar_acordaos(periodo)
+#    print('acordaos buscados para periodo', acordaos_periodo)
+#    #2.3 - Para cada acordao:
+#    #2.3.1 - Buscar url no campo "acordaoLink"
+#    #2.3.2 - Realizar curl para buscar conteudo do acordao conforme: curl 'http://search.trtsp.jus.br/easysearch/cachedownloader?collection=coleta011&docId=0de2d597dbd9460bc4cd4c4b6fa28faebfb53707&fieldName=ementa&extension=html#q=' -H 'Cookie: auth-trt2-es-hml=dc9ac3518f7ecc9056a6b1c8da3f1c3b;'
+#    #2.3.3 - Buscar informacoes da ementa. Ex de retorno: <p style="padding-left: 200px; font-size: 12pt; float: none; margin-bottom: 6pt; line-height: 113%; font-family: 'Arial'; position: static; text-align: justify; text-indent: 0px;" data-estilo-editor="Ementa"><strong>MANUTEN&Ccedil;&Atilde;O DO PLANO DE SA&Uacute;DE. EX-EMPREGADO. APOSENTADO. ART. 31 DA LEI 9.656/1998. </strong>Ao aposentado que contribuir para plano de sa&uacute;de, em decorr&ecirc;ncia de v&iacute;nculo empregat&iacute;cio, pelo prazo m&iacute;nimo de dez anos, &eacute; assegurado o direito de manuten&ccedil;&atilde;o como benefici&aacute;rio, nas mesmas condi&ccedil;&otilde;es de cobertura assistencial de que gozava quando da vig&ecirc;ncia do contrato de trabalho, inclusive no que respeita aos valores praticados na ap&oacute;lice coletiva, desde que assuma o pagamento integral do seguro sa&uacute;de. Esta &eacute; a interpreta&ccedil;&atilde;o teleol&oacute;gica mais autorizada do art. 31 da Lei 9.656/1998. <strong>Recurso do reclamante provido neste aspecto.</strong></p>
+#    #2.3.4 - Gravar acordao sem a ementa no diretorio do respectivo periodo com o nome numeroUnicoProcesso (sem pontos ou tracos) _acordao.txt
+#    #2.3.5 - Gravar ementa no diretorio do respectivo periodo com o nome numeroUnicoProcesso_ementa.txt
+#    #2.4 - Aguardar um periodo aleatorio entre 1 e 5 segundos
+#    aguardar_antes_de_proxima_chamada()
 
 
   
