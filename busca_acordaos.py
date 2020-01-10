@@ -171,5 +171,3 @@ for i in range(quantidade_dias):
     aguardar_antes_de_proxima_chamada(True)
     periodo = periodo + timedelta(days=1)
 
-
-  
