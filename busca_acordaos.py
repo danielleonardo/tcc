@@ -19,7 +19,6 @@ def formatar_nome_diretorio(periodo):
     return formatar_data(data_inicio) + '_' + formatar_data(data_fim)
     
 def criar_diretorio_periodo(periodo):
-    print('criando diretorio para periodo ', periodo)
     nome_diretorio = formatar_nome_diretorio(periodo)
 
     if not os.path.exists(nome_diretorio):
@@ -92,8 +91,6 @@ def pesquisar_acordaos(periodo):
         apagar_arquivos_temporarios(periodo)
         retorno_chamada = realizar_chamada_inicial(periodo)
         gravar_retorno_pesquisa_acordaos(retorno_chamada, periodo)
-        print(retorno_chamada['currentPage'])
-        print(retorno_chamada['totalPages'])
 
         pagina_atual = retorno_chamada['currentPage']
         total_paginas = retorno_chamada['totalPages']
@@ -101,7 +98,6 @@ def pesquisar_acordaos(periodo):
         while pagina_atual < total_paginas:
             retorno_chamada = realizar_chamada_proxima_pagina()
             gravar_retorno_pesquisa_acordaos(retorno_chamada, periodo)
-            print('dentro do while')
             pagina_atual = retorno_chamada['currentPage']
             aguardar_antes_de_proxima_chamada()
         
