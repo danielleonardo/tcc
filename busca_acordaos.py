@@ -123,10 +123,10 @@ def aguardar_antes_de_proxima_chamada(periodo_longo = False):
 
 def gravar_finalizado(periodo):
     with(open(obter_nome_arquivo_finalizado(periodo), 'w')) as arquivo:
-        arquivo.write('finalizado');
+        arquivo.write('finalizado')
 
 def pesquisar_acordaos(periodo):
-    print('pesquisando acordaos para periodo', periodo);
+    print('pesquisando acordaos para periodo', periodo)
     retorno_chamada = None
 
     if not chamada_ja_realizada(periodo):
