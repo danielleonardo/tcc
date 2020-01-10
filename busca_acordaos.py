@@ -3,6 +3,7 @@ import datetime
 import random
 import json
 import time
+import requests
 
 #0 - Setar cookie anti robo'
 cookie_anti_robo = 'valor_cookie'
@@ -72,7 +73,7 @@ def apagar_arquivos_temporarios(periodo):
         os.remove(obter_nome_arquivo_finalizado(periodo))
 
 def obter_numero_segundos():
-    return random.randint(1, 10)
+    return random.randint(3, 15)
 
 def aguardar_antes_de_proxima_chamada():
     segundos_a_aguardar = obter_numero_segundos()
