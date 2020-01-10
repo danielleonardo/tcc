@@ -170,7 +170,6 @@ for i in range(quantidade_dias):
     #2.4 - Aguardar um periodo aleatorio entre 1 e 5 segundos
     aguardar_antes_de_proxima_chamada(True)
     periodo = periodo + timedelta(days=1)
-    i += 1
 
 
   
