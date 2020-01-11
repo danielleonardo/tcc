@@ -11,10 +11,10 @@ class RenovarCookieException(Exception):
         self.message = message
 
 #0 - Setar cookie anti robo'
-cookie_anti_robo = 'JSESSIONID=45059672F2EFB562649597F145600A94.easysearch01; _ga=GA1.3.453960748.1545014547; _gid=GA1.3.1109241380.1578597618; auth-trt2-es-hml=301e3d9c7e23ed91332a13b0e18b935a'
+cookie_anti_robo = 'JSESSIONID=EE11BE52AA63D454D4ACD3F1BE7B6977.easysearch01; _ga=GA1.3.453960748.1545014547; auth-trt2-es-hml=ca4669e060fbea28e0699896733c1700'
 
-data_inicial = '15/08/2019'
-quantidade_dias = 90
+data_inicial = '01/01/2019'
+quantidade_dias = 365
 quantidade_chamadas = 0
 diretorio_base = '/Users/danielcosta/desenv/tcc'
 
@@ -50,13 +50,14 @@ def parse_retorno_chamada(str_retorno_chamada):
 def gerar_header_request():
     return {'accept':'*/*','accept-language':'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7','cache-control':'no-cache','content-type':'application/x-www-form-urlencoded; charset=UTF-8','pragma':'no-cache','x-requested-with':'XMLHttpRequest', 'Cookie': cookie_anti_robo }
 
-def enviar_request(data):
-    request = requests.post(url = 'http://search.trtsp.jus.br/EasySearchFrontEnd/AcordaoServlet', data = data, headers = gerar_header_request())
-
-    if request.status_code == 401:
+def lancar_erro_se_cookie_expirado(response):
+    if response.status_code == 401:
         raise RenovarCookieException('necessario renovar cookie')
-    
-    return request.json()
+
+def enviar_post(data):
+    response = requests.post(url = 'http://search.trtsp.jus.br/EasySearchFrontEnd/AcordaoServlet', data = data, headers = gerar_header_request())
+    lancar_erro_se_cookie_expirado(response)
+    return response.json()
 
 def realizar_chamada_inicial(periodo):
     data = {'termoGeral': '',
@@ -68,11 +69,11 @@ def realizar_chamada_inicial(periodo):
             'tipo_pesquisa': 'aco_ee',
             'order': 'DESC',
             'field': ''}
-    return enviar_request(data)
+    return enviar_post(data)
 
 def realizar_chamada_proxima_pagina():
     data = {'pager': 'true', 'action': 'next', 'tipo_pesquisa': 'aco_ee' }
-    return enviar_request(data)
+    return enviar_post(data)
 
 def obter_nome_arquivo_acordaos(periodo):
     return formatar_nome_diretorio(periodo) + '/acordaos.json'
@@ -136,6 +137,7 @@ def pesquisar_acordaos(periodo):
 
         pagina_atual = retorno_chamada['currentPage']
         total_paginas = retorno_chamada['totalPages']
+        aguardar_antes_de_proxima_chamada()
         
         while pagina_atual < total_paginas:
             try:
@@ -154,20 +156,52 @@ def pesquisar_acordaos(periodo):
 
     return obter_conteudo_acordaos(periodo)
    
+def obter_diretorio_arquivos():
+    return diretorio_base + '/acordaos'
+
+def obter_nome_arquivo_conteudo_acordao(acordao):
+    linkAcordao = acordao['acordaoLink'] 
+    idDocumento = linkAcordao.split('docId=')[1].split('&')[0]
+    return obter_diretorio_arquivos() + '/' + idDocumento + '.html'
+
+def buscar_conteudo(acordao):
+    if not os.path.exists(obter_nome_arquivo_conteudo_acordao(acordao)):
+        print('buscando conteudo para acordao', acordao)
+        print('link acordao:', acordao['acordaoLink'])
+        try:
+            resposta = requests.get(acordao['acordaoLink'], headers = gerar_header_request())
+            lancar_erro_se_cookie_expirado(resposta)
+            gravar_conteudo_acordao(acordao, resposta.text)
+            aguardar_antes_de_proxima_chamada()
+        except RenovarCookieException:
+            raise
+        except:
+            print('Erro ao buscar conteudo. Aguardando.')
+            aguardar_antes_de_proxima_chamada(True)
+    else:
+        print('acordao ja foi buscado ', obter_nome_arquivo_conteudo_acordao(acordao))
+
+def gravar_conteudo_acordao(acordao, conteudo_acordao):
+    nome_arquivo_conteudo_acordao = obter_nome_arquivo_conteudo_acordao(acordao)
+    with(open(nome_arquivo_conteudo_acordao, 'w')) as arquivo:
+        arquivo.write(conteudo_acordao)
+
 #Inicio do procedimento
 periodo = parse_data(data_inicial)    
+
+if not os.path.exists(obter_diretorio_arquivos()):
+    os.makedirs(obter_diretorio_arquivos())
+
 for i in range(quantidade_dias):
     criar_diretorio_periodo(periodo)
-    #2.2 - Pesquisar acordaos do periodo
     acordaos_periodo = pesquisar_acordaos(periodo)
-    print('acordaos buscados para periodo', acordaos_periodo)
-    #2.3 - Para cada acordao:
-    #2.3.1 - Buscar url no campo "acordaoLink"
-    #2.3.2 - Realizar curl para buscar conteudo do acordao conforme: curl 'http://search.trtsp.jus.br/easysearch/cachedownloader?collection=coleta011&docId=0de2d597dbd9460bc4cd4c4b6fa28faebfb53707&fieldName=ementa&extension=html#q=' -H 'Cookie: auth-trt2-es-hml=dc9ac3518f7ecc9056a6b1c8da3f1c3b;'
-    #2.3.3 - Buscar informacoes da ementa. Ex de retorno: <p style="padding-left: 200px; font-size: 12pt; float: none; margin-bottom: 6pt; line-height: 113%; font-family: 'Arial'; position: static; text-align: justify; text-indent: 0px;" data-estilo-editor="Ementa"><strong>MANUTEN&Ccedil;&Atilde;O DO PLANO DE SA&Uacute;DE. EX-EMPREGADO. APOSENTADO. ART. 31 DA LEI 9.656/1998. </strong>Ao aposentado que contribuir para plano de sa&uacute;de, em decorr&ecirc;ncia de v&iacute;nculo empregat&iacute;cio, pelo prazo m&iacute;nimo de dez anos, &eacute; assegurado o direito de manuten&ccedil;&atilde;o como benefici&aacute;rio, nas mesmas condi&ccedil;&otilde;es de cobertura assistencial de que gozava quando da vig&ecirc;ncia do contrato de trabalho, inclusive no que respeita aos valores praticados na ap&oacute;lice coletiva, desde que assuma o pagamento integral do seguro sa&uacute;de. Esta &eacute; a interpreta&ccedil;&atilde;o teleol&oacute;gica mais autorizada do art. 31 da Lei 9.656/1998. <strong>Recurso do reclamante provido neste aspecto.</strong></p>
-    #2.3.4 - Gravar acordao sem a ementa no diretorio do respectivo periodo com o nome numeroUnicoProcesso (sem pontos ou tracos) _acordao.txt
-    #2.3.5 - Gravar ementa no diretorio do respectivo periodo com o nome numeroUnicoProcesso_ementa.txt
-    #2.4 - Aguardar um periodo aleatorio entre 1 e 5 segundos
-    aguardar_antes_de_proxima_chamada(True)
+
+    for acordao in acordaos_periodo['acordaos']:
+
+        if not acordao['ementaLink']:
+            continue
+
+        buscar_conteudo(acordao)
+
     periodo = periodo + timedelta(days=1)
 
