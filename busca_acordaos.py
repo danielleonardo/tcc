@@ -13,14 +13,13 @@ from data_utils \
          , formatar_data_ddmmyyyy \
          , incrementar_periodo
 from requests_util \
-    import realizar_chamada_inicial \
-         , realizar_chamada_proxima_pagina \
-         , realizar_chamada_buscar_conteudo_acordao, RenovarCookieException
+    import RequestUtils, RenovarCookieException
 from controlador_tempo_requests import ControladorTempoRequests
 
 #0 - Setar cookie anti robo'
-cookie_anti_robo = 'JSESSIONID=20D34854CBEC89AFB65FE93AC48FB560.easysearch01; _ga=GA1.3.453960748.1545014547; _gid=GA1.3.1737234348.1578776541; auth-trt2-es-hml=84e049dab9e9b6fadf855aa36277ae1a'
+cookie_anti_robo = 'JSESSIONID=20D34854CBEC89AFB65FE93AC48FB560.easysearch01; _ga=GA1.3.453960748.1545014547; _gid=GA1.3.1737234348.1578776541; auth-trt2-es-hml=a8a99fdb6ac45bc9c954c7069bc700f5'
 controlador_tempo_requests = ControladorTempoRequests()
+requests_util = RequestUtils(cookie_anti_robo)
 
 def pesquisar_acordaos(periodo):
     print('pesquisando acordaos para periodo', periodo)
@@ -28,16 +27,15 @@ def pesquisar_acordaos(periodo):
 
     if not chamada_ja_realizada(periodo):
         apagar_arquivos_temporarios(periodo)
-        retorno_chamada = realizar_chamada_inicial(periodo, cookie_anti_robo)
+        retorno_chamada = requests_util.realizar_chamada_inicial(periodo)
         gravar_retorno_pesquisa_acordaos(retorno_chamada, periodo)
-
         pagina_atual = retorno_chamada['currentPage']
         total_paginas = retorno_chamada['totalPages']
         controlador_tempo_requests.aguardar_antes_de_proxima_chamada()
         
         while pagina_atual < total_paginas:
             try:
-                retorno_chamada = realizar_chamada_proxima_pagina(cookie_anti_robo)
+                retorno_chamada = requests_util.realizar_chamada_proxima_pagina()
                 gravar_retorno_pesquisa_acordaos(retorno_chamada, periodo)
                 pagina_atual = retorno_chamada['currentPage']
                 controlador_tempo_requests.aguardar_antes_de_proxima_chamada()
@@ -57,7 +55,7 @@ def buscar_conteudo(acordao):
         print('buscando conteudo para acordao', acordao)
         print('link acordao:', acordao['acordaoLink'])
         try:
-            resposta = realizar_chamada_buscar_conteudo_acordao(acordao, cookie_anti_robo)
+            resposta = requests_util.realizar_chamada_buscar_conteudo_acordao(acordao)
             gravar_conteudo_acordao(acordao, resposta.text)
             controlador_tempo_requests.aguardar_antes_de_proxima_chamada()
         except RenovarCookieException:
