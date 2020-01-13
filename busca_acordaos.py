@@ -11,7 +11,7 @@ class RenovarCookieException(Exception):
         self.message = message
 
 #0 - Setar cookie anti robo'
-cookie_anti_robo = 'JSESSIONID=EE11BE52AA63D454D4ACD3F1BE7B6977.easysearch01; _ga=GA1.3.453960748.1545014547; auth-trt2-es-hml=ca4669e060fbea28e0699896733c1700'
+cookie_anti_robo = 'JSESSIONID=00E931762EA3174E85472C584C7DDB9D.easysearch01; _ga=GA1.3.453960748.1545014547; _gid=GA1.3.1737234348.1578776541; auth-trt2-es-hml=601aedf506ed49834aeee833f0a84dda'
 
 data_inicial = '01/01/2019'
 quantidade_dias = 365
