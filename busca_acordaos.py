@@ -1,51 +1,29 @@
-import os
-import datetime
-from datetime import timedelta
 import random
-import json
 import time
 import requests
+from manipula_arquivos \
+    import chamada_ja_realizada \
+         , apagar_arquivos_temporarios \
+         , gravar_retorno_pesquisa_acordaos \
+         , gravar_finalizado \
+         , obter_conteudo_acordaos \
+         , conteudo_acordao_ja_buscado \
+         , criar_diretorio_acordaos_se_nao_existir \
+         , criar_diretorio_periodo \
+         , gravar_conteudo_acordao
+from data_utils import parse_data, formatar_data_ddmmyyyy, incrementar_periodo
+         
 
 class RenovarCookieException(Exception):
     def __init__(self, message):
         self.message = message
 
 #0 - Setar cookie anti robo'
-cookie_anti_robo = 'JSESSIONID=00E931762EA3174E85472C584C7DDB9D.easysearch01; _ga=GA1.3.453960748.1545014547; _gid=GA1.3.1737234348.1578776541; auth-trt2-es-hml=601aedf506ed49834aeee833f0a84dda'
+cookie_anti_robo = 'JSESSIONID=393ECA28803E7B4CDCE30DA4E14789FF.easysearch01; _ga=GA1.3.453960748.1545014547; _gid=GA1.3.1737234348.1578776541; auth-trt2-es-hml=625bd9045415b193ec2145c67dcc63c1'
 
 data_inicial = '01/01/2019'
 quantidade_dias = 365
 quantidade_chamadas = 0
-diretorio_base = '/Users/danielcosta/desenv/tcc'
-
-def parse_data(strData):
-    return datetime.datetime.strptime(strData, '%d/%m/%Y')
-    
-def formatar_data_yyyymmdd(data):
-    return data.strftime('%Y%m%d')
-
-def formatar_data_ddmmyyyy(data):
-    return data.strftime('%d/%m/%Y')
-
-def formatar_nome_diretorio(periodo):
-    return diretorio_base + "/" + formatar_data_yyyymmdd(periodo)
-    
-def criar_diretorio_periodo(periodo):
-    nome_diretorio = formatar_nome_diretorio(periodo)
-
-    if not os.path.exists(nome_diretorio):
-         print('diretorio %s ainda nao existe. criando ', nome_diretorio)
-         os.makedirs(nome_diretorio)
-
-def obter_nome_arquivo_finalizado(periodo):
-    return formatar_nome_diretorio(periodo) + '/finalizado.txt'
-
-def chamada_ja_realizada(periodo):
-    return os.path.exists(obter_nome_arquivo_finalizado(periodo))
-
-def parse_retorno_chamada(str_retorno_chamada):
-    print('parse_retorno_chamada:', str_retorno_chamada)
-    return json.loads(str_retorno_chamada)
 
 def gerar_header_request():
     return {'accept':'*/*','accept-language':'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7','cache-control':'no-cache','content-type':'application/x-www-form-urlencoded; charset=UTF-8','pragma':'no-cache','x-requested-with':'XMLHttpRequest', 'Cookie': cookie_anti_robo }
@@ -75,32 +53,6 @@ def realizar_chamada_proxima_pagina():
     data = {'pager': 'true', 'action': 'next', 'tipo_pesquisa': 'aco_ee' }
     return enviar_post(data)
 
-def obter_nome_arquivo_acordaos(periodo):
-    return formatar_nome_diretorio(periodo) + '/acordaos.json'
-
-def obter_conteudo_acordaos(periodo):
-    with (open(obter_nome_arquivo_acordaos(periodo), 'r')) as arquivo:
-        return json.load(arquivo)
-
-def gravar_retorno_pesquisa_acordaos(retorno_chamada, periodo):
-    nome_arquivo_acordaos = obter_nome_arquivo_acordaos(periodo)
-    acordaos = {}
-    acordaos['acordaos'] = []
-    if os.path.exists(nome_arquivo_acordaos):
-        acordaos = obter_conteudo_acordaos(periodo)
-
-    acordaos['acordaos'].extend(retorno_chamada['listaAcordao'])
-    
-    with(open(nome_arquivo_acordaos, 'w')) as outfile:
-        json.dump(acordaos, outfile)
-    
-def apagar_arquivos_temporarios(periodo):
-    if os.path.exists(obter_nome_arquivo_acordaos(periodo)):
-        os.remove(obter_nome_arquivo_acordaos(periodo))
-
-    if os.path.exists(obter_nome_arquivo_finalizado(periodo)):
-        os.remove(obter_nome_arquivo_finalizado(periodo))
-
 def zerar_quantidade_chamadas():
     global quantidade_chamadas
     quantidade_chamadas = 0
@@ -121,10 +73,6 @@ def aguardar_antes_de_proxima_chamada(periodo_longo = False):
     segundos_a_aguardar = obter_numero_segundos(periodo_longo)
     print('aguardando', segundos_a_aguardar, 'segundos antes da proxima chamada')
     time.sleep(segundos_a_aguardar)
-
-def gravar_finalizado(periodo):
-    with(open(obter_nome_arquivo_finalizado(periodo), 'w')) as arquivo:
-        arquivo.write('finalizado')
 
 def pesquisar_acordaos(periodo):
     print('pesquisando acordaos para periodo', periodo)
@@ -156,16 +104,8 @@ def pesquisar_acordaos(periodo):
 
     return obter_conteudo_acordaos(periodo)
    
-def obter_diretorio_arquivos():
-    return diretorio_base + '/acordaos'
-
-def obter_nome_arquivo_conteudo_acordao(acordao):
-    linkAcordao = acordao['acordaoLink'] 
-    idDocumento = linkAcordao.split('docId=')[1].split('&')[0]
-    return obter_diretorio_arquivos() + '/' + idDocumento + '.html'
-
 def buscar_conteudo(acordao):
-    if not os.path.exists(obter_nome_arquivo_conteudo_acordao(acordao)):
+    if not conteudo_acordao_ja_buscado(acordao):
         print('buscando conteudo para acordao', acordao)
         print('link acordao:', acordao['acordaoLink'])
         try:
@@ -178,20 +118,11 @@ def buscar_conteudo(acordao):
         except:
             print('Erro ao buscar conteudo. Aguardando.')
             aguardar_antes_de_proxima_chamada(True)
-    else:
-        print('acordao ja foi buscado ', obter_nome_arquivo_conteudo_acordao(acordao))
-
-def gravar_conteudo_acordao(acordao, conteudo_acordao):
-    nome_arquivo_conteudo_acordao = obter_nome_arquivo_conteudo_acordao(acordao)
-    with(open(nome_arquivo_conteudo_acordao, 'w')) as arquivo:
-        arquivo.write(conteudo_acordao)
 
 #Inicio do procedimento
 periodo = parse_data(data_inicial)    
 
-if not os.path.exists(obter_diretorio_arquivos()):
-    os.makedirs(obter_diretorio_arquivos())
-
+criar_diretorio_acordaos_se_nao_existir()
 for i in range(quantidade_dias):
     criar_diretorio_periodo(periodo)
     acordaos_periodo = pesquisar_acordaos(periodo)
@@ -203,5 +134,4 @@ for i in range(quantidade_dias):
 
         buscar_conteudo(acordao)
 
-    periodo = periodo + timedelta(days=1)
-
+    periodo = incrementar_periodo(periodo)
