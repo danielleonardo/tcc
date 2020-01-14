@@ -17,7 +17,7 @@ from requests_util \
 from controlador_tempo_requests import ControladorTempoRequests
 
 #0 - Setar cookie anti robo'
-cookie_anti_robo = 'JSESSIONID=20D34854CBEC89AFB65FE93AC48FB560.easysearch01; _ga=GA1.3.453960748.1545014547; _gid=GA1.3.1737234348.1578776541; auth-trt2-es-hml=a8a99fdb6ac45bc9c954c7069bc700f5'
+cookie_anti_robo = 'JSESSIONID=39393CE7C10243C51ED35DFAEAFF711A.easysearch01; _ga=GA1.3.453960748.1545014547; _gid=GA1.3.1737234348.1578776541; auth-trt2-es-hml=241d7ebeeb33b6f6a06afee387933ea0'
 controlador_tempo_requests = ControladorTempoRequests()
 requests_util = RequestUtils(cookie_anti_robo)
 

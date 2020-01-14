@@ -1,5 +1,7 @@
 import json
 import os
+import ntpath
+
 from data_utils import formatar_data_yyyymmdd
 
 diretorio_base = '/Users/danielcosta/desenv/tcc'
@@ -77,3 +79,55 @@ def conteudo_acordao_ja_buscado(acordao):
     else:
         print('acordao ja foi buscado ', obter_nome_arquivo_conteudo_acordao(acordao))
         return True
+
+def obter_conteudo_acordao(nome_arquivo):
+    with open(nome_arquivo, 'r') as f:
+        return f.read()
+
+def obter_diretorio_ementas():
+    return diretorio_base + '/ementas'
+
+def obter_diretorio_acordaos():
+    return diretorio_base + '/acordaos_tratados'
+
+def obter_nome_arquivo_ementa(path_arquivo_original):
+    nome_arquivo_original = ntpath.split(os.path.splitext(path_arquivo_original)[0])[1]
+    return obter_diretorio_ementas() + '/' + nome_arquivo_original + '_ementa.html'
+
+def obter_nome_arquivo_acordao(path_arquivo_original):
+    nome_arquivo_original = ntpath.split(os.path.splitext(path_arquivo_original)[0])[1]
+    return obter_diretorio_acordaos() + '/' + nome_arquivo_original + '_acordao.html'
+
+
+def listar_arquivos_acordaos_nao_tratados():
+    retorno = []
+
+    for nome_arquivo in os.listdir(obter_diretorio_arquivos()):
+
+        if nome_arquivo.endswith('.html'): 
+            path_arquivo_original = obter_diretorio_arquivos() + '/' + nome_arquivo 
+
+            if not os.path.exists(obter_nome_arquivo_ementa(path_arquivo_original)) \
+            and not os.path.exists(obter_nome_arquivo_acordao(path_arquivo_original)):
+                retorno.append(path_arquivo_original)
+            else:
+                print('arquivo ja tratado.', path_arquivo_original)
+
+    return retorno
+
+def gravar_ementa(nome_arquivo_original, conteudo):
+    with(open(obter_nome_arquivo_ementa(nome_arquivo_original), 'w')) as output:
+        output.write(conteudo)
+
+def gravar_acordao(nome_arquivo_original, conteudo):
+    with(open(obter_nome_arquivo_acordao(nome_arquivo_original), 'w')) as output:
+        output.write(conteudo)
+
+def criar_diretorios_arquivos_tratados():
+    if not os.path.exists(obter_diretorio_acordaos()):
+        os.makedirs(obter_diretorio_acordaos())
+
+    if not os.path.exists(obter_diretorio_ementas()):
+        os.makedirs(obter_diretorio_ementas())
+
+
