@@ -15,10 +15,10 @@ class ControladorTempoRequests:
     def obter_numero_segundos(self, periodo_longo):
         if periodo_longo or self.quantidade_chamadas > 10:
             self.zerar_quantidade_chamadas()
-            return random.randint(4, 5)
+            return random.randint(2, 3)
         else:
             self.incrementar_quantidade_chamadas()
-            return random.randint(1, 3)
+            return random.randint(0, 0)
 
     def aguardar_antes_de_proxima_chamada(self, periodo_longo = False):
         segundos_a_aguardar = self.obter_numero_segundos(periodo_longo)

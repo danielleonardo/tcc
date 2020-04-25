@@ -15,9 +15,12 @@ from data_utils \
 from requests_util \
     import RequestUtils, RenovarCookieException
 from controlador_tempo_requests import ControladorTempoRequests
+from send_mail import send_mail_token_expirado
+from create_gui import Alerta
 
 #0 - Setar cookie anti robo'
-cookie_anti_robo = 'JSESSIONID=39393CE7C10243C51ED35DFAEAFF711A.easysearch01; _ga=GA1.3.453960748.1545014547; _gid=GA1.3.1737234348.1578776541; auth-trt2-es-hml=241d7ebeeb33b6f6a06afee387933ea0'
+cookie_anti_robo = 'JSESSIONID=E8294CF8A8D785F6A0FB39DC681B353B.easysearch01; auth-trt2-es-hml=541333d44114ef6cf2b7edde25af298a'
+
 controlador_tempo_requests = ControladorTempoRequests()
 requests_util = RequestUtils(cookie_anti_robo)
 
@@ -40,6 +43,8 @@ def pesquisar_acordaos(periodo):
                 pagina_atual = retorno_chamada['currentPage']
                 controlador_tempo_requests.aguardar_antes_de_proxima_chamada()
             except RenovarCookieException:
+                send_mail_token_expirado()
+                Alerta()
                 raise
             except:
                 controlador_tempo_requests.aguardar_antes_de_proxima_chamada(True)
@@ -59,13 +64,15 @@ def buscar_conteudo(acordao):
             gravar_conteudo_acordao(acordao, resposta.text)
             controlador_tempo_requests.aguardar_antes_de_proxima_chamada()
         except RenovarCookieException:
+            send_mail_token_expirado()
+            Alerta()
             raise
         except:
             print('Erro ao buscar conteudo. Aguardando.')
             controlador_tempo_requests.aguardar_antes_de_proxima_chamada(True)
 
 #Inicio do procedimento
-periodo = parse_data('01/01/2019')
+periodo = parse_data('01/01/2016')
 criar_diretorio_acordaos_se_nao_existir()
 for i in range(365):
     criar_diretorio_periodo(periodo)

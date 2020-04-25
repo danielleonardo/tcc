@@ -1,6 +1,8 @@
 import json
 import os
 import ntpath
+import shutil
+
 
 from data_utils import formatar_data_yyyymmdd
 
@@ -49,9 +51,13 @@ def criar_diretorio_acordaos_se_nao_existir():
         os.makedirs(obter_diretorio_arquivos())
 
 def obter_nome_arquivo_conteudo_acordao(acordao):
-    linkAcordao = acordao['acordaoLink'] 
-    idDocumento = linkAcordao.split('docId=')[1].split('&')[0]
-    return obter_diretorio_arquivos() + '/' + idDocumento + '.html'
+    try:
+        linkAcordao = acordao['acordaoLink'] 
+        idDocumento = linkAcordao.split('docId=')[1].split('&')[0]
+        return obter_diretorio_arquivos() + '/' + idDocumento + '.html'
+    except:
+        print('Erro ao buscar acordao', acordao)
+        return None
 
 def obter_conteudo_ja_existente_periodo(periodo):
     acordaos = {}
@@ -74,7 +80,13 @@ def gravar_finalizado(periodo):
         arquivo.write('finalizado')
 
 def conteudo_acordao_ja_buscado(acordao):
-    if not os.path.exists(obter_nome_arquivo_conteudo_acordao(acordao)):
+    nome_arquivo_conteudo = obter_nome_arquivo_conteudo_acordao(acordao) 
+
+    if nome_arquivo_conteudo == None:
+        print('acordao com estrutura invalida', acordao)
+        return True
+
+    if not os.path.exists(nome_arquivo_conteudo):
         return False
     else:
         print('acordao ja foi buscado ', obter_nome_arquivo_conteudo_acordao(acordao))
@@ -90,13 +102,14 @@ def obter_diretorio_ementas():
 def obter_diretorio_acordaos():
     return diretorio_base + '/acordaos_tratados'
 
+def obter_nome_arquivo(path_to_arquivo):
+    return ntpath.split(os.path.splitext(path_to_arquivo)[0])[1]
+
 def obter_nome_arquivo_ementa(path_arquivo_original):
-    nome_arquivo_original = ntpath.split(os.path.splitext(path_arquivo_original)[0])[1]
-    return obter_diretorio_ementas() + '/' + nome_arquivo_original + '_ementa.html'
+    return obter_diretorio_ementas() + '/' + obter_nome_arquivo(path_arquivo_original) + '_ementa.html'
 
 def obter_nome_arquivo_acordao(path_arquivo_original):
-    nome_arquivo_original = ntpath.split(os.path.splitext(path_arquivo_original)[0])[1]
-    return obter_diretorio_acordaos() + '/' + nome_arquivo_original + '_acordao.html'
+    return obter_diretorio_acordaos() + '/' + obter_nome_arquivo(path_arquivo_original) + '_acordao.html'
 
 
 def listar_arquivos_acordaos_nao_tratados():
@@ -106,22 +119,37 @@ def listar_arquivos_acordaos_nao_tratados():
 
         if nome_arquivo.endswith('.html'): 
             path_arquivo_original = obter_diretorio_arquivos() + '/' + nome_arquivo 
-
-            if not os.path.exists(obter_nome_arquivo_ementa(path_arquivo_original)) \
-            and not os.path.exists(obter_nome_arquivo_acordao(path_arquivo_original)):
-                retorno.append(path_arquivo_original)
-            else:
-                print('arquivo ja tratado.', path_arquivo_original)
+            retorno.append(path_arquivo_original)
 
     return retorno
 
-def gravar_ementa(nome_arquivo_original, conteudo):
-    with(open(obter_nome_arquivo_ementa(nome_arquivo_original), 'w')) as output:
-        output.write(conteudo)
+def obter_diretorio_ementa(ementa):
+    return obter_diretorio_ementas() + '/' + ementa.strip()
+
+def criar_diretorio_ementa_se_nao_existir(ementa):
+    if not os.path.exists(obter_diretorio_ementa(ementa)):
+        os.makedirs(obter_diretorio_ementa(ementa))
+
+def gerar_arquivo_diretorio_ementa(diretorio, arquivo):
+    return diretorio + '/' + obter_nome_arquivo(arquivo) + '.html'
+
+def copiar_arquivo_para_diretorio(diretorio, arquivo):
+    shutil.copyfile(arquivo, gerar_arquivo_diretorio_ementa(diretorio, arquivo))
+
+def remover_ementas():
+    shutil.rmtree(obter_diretorio_ementas())
+
+def gravar_ementa(arquivo_acordao, ementas):
+    for ementa in ementas:
+        criar_diretorio_ementa_se_nao_existir(ementa)
+        copiar_arquivo_para_diretorio(obter_diretorio_ementa(ementa), arquivo_acordao)
 
 def gravar_acordao(nome_arquivo_original, conteudo):
-    with(open(obter_nome_arquivo_acordao(nome_arquivo_original), 'w')) as output:
+    arquivo_acordao = obter_nome_arquivo_acordao(nome_arquivo_original)
+    with(open(arquivo_acordao, 'w')) as output:
         output.write(conteudo)
+
+    return arquivo_acordao
 
 def criar_diretorios_arquivos_tratados():
     if not os.path.exists(obter_diretorio_acordaos()):
@@ -130,4 +158,17 @@ def criar_diretorios_arquivos_tratados():
     if not os.path.exists(obter_diretorio_ementas()):
         os.makedirs(obter_diretorio_ementas())
 
+def listar_ementas():
+    return os.listdir(obter_diretorio_ementas())
 
+def listar_arquivos_acordaos_tratados():
+    retorno = []
+
+    for arquivo in os.listdir(obter_diretorio_acordaos()):
+        if (arquivo.endswith('_acordao.html')):
+            retorno.append(arquivo)
+    
+    return retorno
+
+def obter_path_completo_acordao_tratado(acordao):
+    return obter_diretorio_acordaos() + '/' + acordao
