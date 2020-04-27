@@ -5,6 +5,7 @@ from manipula_arquivos \
           , obter_conteudo_acordao \
           , criar_diretorios_arquivos_tratados \
           , remover_ementas
+from database_utils import DatabaseUtils
 from bs4 import BeautifulSoup
 from unidecode import unidecode
 import re
@@ -12,16 +13,12 @@ import re
 def extrair_conteudo_acordao(arquivo):
     conteudo = obter_conteudo_acordao(arquivo)
     html = BeautifulSoup(conteudo, features='lxml')
-    for tag in html.find_all(eh_ementa):
-        tag.extract()
+    texto = ''
+    #Removendo ementa (Parte que deve ser gerada)
+    for tag in html.find_all(eh_corpo_de_texto):
+        texto = texto + unidecode(tag.text.rstrip().upper()) + ' '
 
-    for tag in html.find_all(eh_cabecalho):
-        tag.extract()
-
-    for tag in html.find_all(eh_assinatura):
-        tag.extract()
-
-    return html.text
+    return texto
 
 
 def eh_ementa(tag):
@@ -29,12 +26,22 @@ def eh_ementa(tag):
     and tag.attrs['data-estilo-editor'] == 'Ementa'
 
 def eh_cabecalho(tag):
+    #Contém nome das partes e número do processo
     return tag.has_attr('data-estilo-editor') \
     and tag.attrs['data-estilo-editor'] == 'Texto cabeçalho'
 
 def eh_assinatura(tag):
+    #Contém nome dos magistrados
     return tag.has_attr('data-estilo-editor') \
     and tag.attrs['data-estilo-editor'] == 'Assinatura'
+
+def eh_corpo_de_texto(tag):
+    #Contém nome dos magistrados
+    return tag.has_attr('data-estilo-editor') \
+    and tag.attrs['data-estilo-editor'] == 'Corpo de texto'
+
+def nao_eh_corpo_de_texto(tag):
+    return not eh_corpo_de_texto(tag)
 
 def extrair_texto_ementa(texto_ementa, lista_ementas):
             ementa_list = re.split('ementa\.|Ementa\.|EMENTA\.|ementa:|Ementa:|EMENTA:|\.| -| e | E |"|:', texto_ementa)
@@ -73,12 +80,18 @@ def extrair_conteudo_ementa(arquivo):
 
     return retorno
 
-criar_diretorios_arquivos_tratados()
-remover_ementas()
-for arquivo in listar_arquivos_acordaos_nao_tratados():
-    print('processando arquivo', arquivo)
-    ementas = extrair_conteudo_ementa(arquivo)
-    print(ementas)
-    acordao = extrair_conteudo_acordao(arquivo)
-    acordao_tratado = gravar_acordao(arquivo, acordao)
-    gravar_ementa(acordao_tratado, ementas)
+with DatabaseUtils() as database:
+    database.limpar_base()
+    for arquivo_acordao in listar_arquivos_acordaos_nao_tratados():
+        nome_arquivo = arquivo_acordao.split('/')[-1]
+        print('processando arquivo', nome_arquivo)
+        ementas = extrair_conteudo_ementa(arquivo_acordao)
+        print(ementas)
+        conteudo_tratado_acordao = extrair_conteudo_acordao(arquivo_acordao)
+
+        database.inserir_acordao_se_nao_existir(nome_arquivo)
+        database.inserir_ou_atualizar_conteudo(nome_arquivo, conteudo_tratado_acordao)
+        for ementa in ementas:
+            database.inserir_ementa_se_nao_existir(ementa)
+            database.relacionar_ementa_acordao(ementa, nome_arquivo)
+

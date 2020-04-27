@@ -19,7 +19,7 @@ class DatabaseUtils:
         if (self.connection != None):
             self.connection.close()
 
-    def executar_insert(self, insert, valores):
+    def executar_insert(self, insert, valores=()):
         cursor = self.connection.cursor()
         pg_insert = insert
         inserted_values = valores
@@ -47,3 +47,10 @@ class DatabaseUtils:
                                   INTO acordao_ementa (nome_acordao, nome_ementa) 
                                 VALUES (%s, %s) 
                            ON CONFLICT (nome_acordao, nome_ementa) DO NOTHING;""", (acordao, ementa,))
+
+    def limpar_base(self):
+        self.executar_insert("""
+            truncate acordao_ementa cascade;
+            truncate acordao_conteudo cascade;
+            truncate ementa cascade;
+            truncate acordao cascade;""")
