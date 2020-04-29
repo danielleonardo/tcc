@@ -54,3 +54,31 @@ class DatabaseUtils:
             truncate acordao_conteudo cascade;
             truncate ementa cascade;
             truncate acordao cascade;""")
+
+    def exportar_arquivo(self, caminho):
+        self.executar_insert("""Copy (select a.nome_acordao, regexp_replace(a.conteudo, E'[\\n\\r]+', ' ', 'g' )
+, (select count(distinct ae2.nome_acordao )
+     from acordao_ementa ae2 
+    where ae2.nome_acordao = a.nome_acordao and ae2.nome_ementa = 'RESPONSABILIDADE SUBSIDIARIA') as "ementa_responsabilidade_subsidiaria"
+, (select count(distinct ae2.nome_acordao ) 
+     from acordao_ementa ae2 
+    where ae2.nome_acordao = a.nome_acordao and ae2.nome_ementa = 'HORAS EXTRAS') as "ementa_horas_extras"
+, (select count(distinct ae2.nome_acordao )
+     from acordao_ementa ae2 
+    where ae2.nome_acordao = a.nome_acordao and ae2.nome_ementa = 'JUSTICA GRATUITA') as "ementa_justica_gratuita"
+, (select count(distinct ae2.nome_acordao )
+     from acordao_ementa ae2 
+    where ae2.nome_acordao = a.nome_acordao and ae2.nome_ementa = 'EMBARGOS DE DECLARACAO') as "ementa_embargos_de_declaracao"
+, (select count(distinct ae2.nome_acordao )
+     from acordao_ementa ae2 
+    where ae2.nome_acordao = a.nome_acordao and ae2.nome_ementa = 'ONUS DA PROVA') as "ementa_onus_da_prova"    
+from acordao_conteudo a
+where exists (select 1 
+                from acordao_ementa ae 
+               where ae.nome_acordao  = a.nome_acordao 
+                 and (ae.nome_ementa in('RESPONSABILIDADE SUBSIDIARIA',  
+                                        'HORAS EXTRAS', 
+                                        'JUSTICA GRATUITA', 
+                                        'EMBARGOS DE DECLARACAO', 
+                                        'ONUS DA PROVA')))) To '%s' With CSV DELIMITER ',' HEADER;
+        """ % caminho)

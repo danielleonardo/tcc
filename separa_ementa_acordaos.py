@@ -95,3 +95,5 @@ with DatabaseUtils() as database:
             database.inserir_ementa_se_nao_existir(ementa)
             database.relacionar_ementa_acordao(ementa, nome_arquivo)
 
+    database.exportar_arquivo('/Users/danielcosta/acordaos_ementas.csv')
+
