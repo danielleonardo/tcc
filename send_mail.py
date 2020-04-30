@@ -8,7 +8,7 @@ def send_mail_token_expirado():
 
     #The mail addresses and password
     sender_address = 'danielleonardo.costa@gmail.com'
-    sender_pass = 'seajvg91'
+    sender_pass = 'xxxxxxxx'
     receiver_address = 'danielleonardo.costa@gmail.com'
     #Setup the MIME
     message = MIMEMultipart()
